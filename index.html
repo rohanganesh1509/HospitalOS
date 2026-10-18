@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block heading %}Operations dashboard{% endblock %}
+{% block content %}
+<section class="welcome-row"><div><h2>Resource overview</h2><p>Monitor patient processes and run scheduling algorithms.</p></div><span class="date-chip">● &nbsp; Live local simulation</span></section>
+<section class="stats-grid">
+  <article class="stat-card"><div class="stat-top"><span>Total patients</span><span class="stat-icon blue">♙</span></div><div class="stat-value">{{ total }}</div><div class="stat-foot">Registered processes</div></article>
+  <article class="stat-card"><div class="stat-top"><span>Waiting queue</span><span class="stat-icon amber">◷</span></div><div class="stat-value">{{ waiting }}</div><div class="stat-foot">Awaiting scheduling</div></article>
+  <article class="stat-card"><div class="stat-top"><span>Completed</span><span class="stat-icon green">✓</span></div><div class="stat-value">{{ completed }}</div><div class="stat-foot">Marked completed</div></article>
+  <article class="stat-card"><div class="stat-top"><span>On-duty doctors</span><span class="stat-icon violet">♙</span></div><div class="stat-value">{{ doctor_count }}</div><div class="stat-foot">{{ unassigned }} active patient(s) unassigned</div></article>
+</section>
+<section class="charts-grid" id="dashboardCharts"
+  data-waiting="{{ waiting }}" data-completed="{{ completed }}" data-priorities='{{ priority_counts|tojson }}'>
+  <article class="panel chart-panel">
+    <div class="panel-heading"><div><h3>Patient queue status</h3><p>Live count of waiting and completed processes.</p></div><span class="chart-mark">01</span></div>
+    <div class="chart-canvas doughnut-canvas"><canvas id="statusChart" aria-label="Patient queue status chart"></canvas></div>
+    <div class="chart-legend"><span><i class="legend-dot waiting-dot"></i>Waiting</span><span><i class="legend-dot done-dot"></i>Completed</span></div>
+  </article>
+  <article class="panel chart-panel">
+    <div class="panel-heading"><div><h3>Priority distribution</h3><p>Number of processes assigned to each priority.</p></div><span class="chart-mark">02</span></div>
+    <div class="chart-canvas"><canvas id="priorityChart" aria-label="Priority distribution bar chart"></canvas></div>
+  </article>
+</section>
+<section class="content-grid">
+  <article class="panel">
+    <div class="panel-heading"><div><h3>Patient process queue</h3><p>Each patient is represented as an OS process.</p></div><span class="count-chip">{{ patients|length }} records</span></div>
+    <div class="table-wrap"><table><thead><tr><th>PROCESS</th><th>ARRIVAL</th><th>DURATION</th><th>PRIORITY</th><th>DOCTOR</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>
+    {% for p in patients %}
+      <tr><td><div class="patient-cell"><span class="patient-avatar">{{ p.name[:1]|upper }}</span><div><b>{{ p.name }}</b><small>PID-{{ '%03d'|format(p.id) }}</small></div></div></td><td>{{ p.arrival_time }}</td><td>{{ p.burst_time }} units</td><td><span class="priority p{{ [p.priority, 4]|min }}">{{ p.priority }}</span></td><td>{% if p.doctor_name %}<span class="doctor-pill">{{ p.doctor_name }}</span>{% else %}<span class="status unassigned">Unassigned</span>{% endif %}</td><td><span class="status {{ 'done' if p.status == 'Completed' else 'waiting' }}">{{ p.status }}</span></td><td><div class="action-row">{% if p.status != 'Completed' %}<form method="post" action="{{ url_for('complete_patient', patient_id=p.id) }}"><button class="tiny-button" type="submit" title="Mark completed">✓</button></form>{% if p.doctor_id %}<form method="post" action="{{ url_for('unassign_patient', patient_id=p.id) }}"><button class="tiny-button neutral" type="submit" title="Unassign doctor">↶</button></form>{% endif %}{% endif %}</div></td></tr>
+    {% else %}<tr><td colspan="7" class="empty">No patients yet. Add your first patient using the form.</td></tr>{% endfor %}
+    </tbody></table></div>
+  </article>
+  <article class="panel add-panel">
+    <div class="panel-heading"><div><h3>Add patient process</h3><p>Create a process for the scheduler.</p></div><span class="plus-icon">＋</span></div>
+    <form method="post" action="{{ url_for('add_patient') }}" class="patient-form">
+      <label>Patient / process name<input name="name" placeholder="e.g. Patient D" required maxlength="80"></label>
+      <div class="form-two"><label>Arrival time<input name="arrival_time" type="number" min="0" value="0" required></label><label>Treatment duration<input name="burst_time" type="number" min="1" value="4" required></label></div>
+      <label>Specialization needed<select name="specialization" required>{% for spec in specializations %}<option value="{{ spec }}" {% if spec == 'General Medicine' %}selected{% endif %}>{{ spec }}</option>{% endfor %}</select></label>
+      <label>Priority <span class="muted">(1 = highest)</span><input name="priority" type="number" min="1" value="2" required></label>
+      <button class="primary-button full" type="submit">＋ Add to patient queue</button>
+    </form>
+    <div class="tip-box"><b>Automatic doctor assignment</b><p>HospitalOS chooses an on-duty doctor in the selected specialization with the lowest active workload and available capacity. If none is available, the patient remains unassigned.</p></div>
+  </article>
+</section>
+<section class="panel scheduler-panel">
+  <div class="panel-heading"><div><h3>CPU scheduling simulator</h3><p>Choose an algorithm to compare process execution and performance.</p></div><span class="concept-tag">PROCESS SCHEDULING</span></div>
+  <div class="scheduler-controls"><label for="algorithm">Scheduling algorithm</label><select id="algorithm"><option value="FCFS">First Come, First Served (FCFS)</option><option value="SJF">Shortest Job First (SJF)</option><option value="PRIORITY">Priority Scheduling</option></select><button class="primary-button" id="runSchedule">▶ Run simulation</button></div>
+  <div id="scheduleMessage" class="result-message">Choose an algorithm and run the simulation to see results.</div>
+  <div id="metrics" class="metrics-grid hidden"></div>
+  <div id="ganttArea" class="gantt-area hidden"><h4>Gantt chart · simulated execution timeline</h4><div id="gantt" class="gantt"></div><div id="ganttTicks" class="gantt-ticks"></div></div>
+  <div id="performanceChartArea" class="performance-chart-area hidden"><h4>Per-process performance comparison</h4><div class="performance-canvas"><canvas id="performanceChart" aria-label="Waiting and turnaround time by process"></canvas></div></div>
+  <div id="scheduleTableArea" class="table-wrap hidden"><table><thead><tr><th>PROCESS</th><th>START</th><th>COMPLETION</th><th>WAITING TIME</th><th>TURNAROUND TIME</th></tr></thead><tbody id="scheduleRows"></tbody></table></div>
+</section>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+{% endblock %}

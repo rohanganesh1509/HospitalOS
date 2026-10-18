@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>HospitalOS | OS Resource Simulator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="brand"><span class="brand-icon">H+</span><div><strong>HospitalOS</strong><small>OS Resource Simulator</small></div></div>
+    <div class="nav-label">WORKSPACE</div>
+    <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">▦ <span>Dashboard</span></a>
+    <a class="nav-link {% if request.endpoint in ['doctors', 'edit_doctor'] %}active{% endif %}" href="{{ url_for('doctors') }}">♙ <span>Doctors & Assignments</span></a>
+    <a class="nav-link {% if request.endpoint == 'resources' %}active{% endif %}" href="{{ url_for('resources') }}">▤ <span>Deadlock Lab</span></a>
+    <div class="sidebar-note"><strong>Simulation mode</strong><p>Educational demonstration only. Not for real clinical decisions.</p><span class="status-dot"></span> System online</div>
+    <div class="sidebar-footer">OPERATING SYSTEMS PROJECT<br><b>HospitalOS v1.1</b></div>
+  </aside>
+  <main class="main">
+    <header class="topbar"><div><span class="eyebrow">HOSPITAL OPERATIONS</span><h1>{% block heading %}Dashboard{% endblock %}</h1></div><div class="top-right"><span class="live-pill"><i></i> Simulation ready</span><div class="avatar">OS</div></div></header>
+    {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
+    {% block content %}{% endblock %}
+    <footer class="page-footer">HospitalOS · Operating Systems concepts in a hospital resource simulation</footer>
+  </main>
+</body>
+</html>
