@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block heading %}Doctors & assignments{% endblock %}
+{% block content %}
+<section class="welcome-row"><div><h2>Doctor workload overview</h2><p>Automatic assignment matches specialization and balances active workload within each doctor's capacity.</p></div><span class="date-chip">● Automatic assignment</span></section>
+<section class="stats-grid doctor-stats">
+  <article class="stat-card"><div class="stat-top"><span>Registered doctors</span><span class="stat-icon blue">♙</span></div><div class="stat-value">{{ doctor_cards|length }}</div><div class="stat-foot">Configured in the system</div></article>
+  <article class="stat-card"><div class="stat-top"><span>On duty</span><span class="stat-icon green">✓</span></div><div class="stat-value">{{ on_duty }}</div><div class="stat-foot">Eligible for assignments</div></article>
+  <article class="stat-card"><div class="stat-top"><span>Active patients</span><span class="stat-icon amber">◷</span></div><div class="stat-value">{{ active_total }}</div><div class="stat-foot">Not marked completed</div></article>
+  <article class="stat-card"><div class="stat-top"><span>Unassigned</span><span class="stat-icon violet">↗</span></div><div class="stat-value">{{ unassigned }}</div><div class="stat-foot">Waiting for matching capacity</div></article>
+</section>
+<div class="doctors-layout">
+  <section class="panel add-panel">
+    <div class="panel-heading"><div><h3>Add a doctor</h3><p>New doctors are on duty by default.</p></div><span class="plus-icon">＋</span></div>
+    <form method="post" action="{{ url_for('doctors') }}" class="patient-form">
+      <label>Doctor name<input name="name" placeholder="e.g. Dr. Nisha" maxlength="80" required></label>
+      <label>Specialization<select name="specialization" required>{% for spec in specializations %}<option value="{{ spec }}">{{ spec }}</option>{% endfor %}</select></label>
+      <label>Maximum active patients<input type="number" name="max_patients" min="1" max="100" value="5" required></label>
+      <button class="primary-button full" type="submit">＋ Add doctor</button>
+    </form>
+    <div class="tip-box"><b>Assignment rule</b><p>For a new patient, the system selects an on-duty doctor with the same specialization and free capacity. Among eligible doctors, the one with the fewest active patients is selected first.</p></div>
+    {% if unassigned %}<form method="post" action="{{ url_for('auto_assign_unassigned') }}" class="reattempt-form"><button class="primary-button full" type="submit">↻ Retry automatic assignment ({{ unassigned }})</button></form>{% endif %}
+  </section>
+  <section class="doctor-list">
+    {% for item in doctor_cards %}
+      {% set d = item.doctor %}
+      <article class="panel doctor-card">
+        <div class="doctor-card-top"><div class="doctor-identity"><span class="doctor-avatar">{{ d.name[:1]|upper }}</span><div><h3>{{ d.name }}</h3><p>{{ d.specialization }}</p></div></div><span class="status doctor-status {{ 'done' if d.on_duty and item.active < d.max_patients else ('waiting' if d.on_duty else 'off-duty') }}">{{ item.status }}</span></div>
+        <div class="workload-label"><span>Active workload</span><b>{{ item.active }} / {{ d.max_patients }}</b></div>
+        <div class="workload-track"><span style="width: {{ [100, (item.active * 100 / d.max_patients)|round(0, 'ceil')]|min }}%"></span></div>
+        <div class="doctor-patient-list"><b>Assigned patients</b>
+          {% if item.patients %}
+            <div class="assigned-chips">{% for p in item.patients %}<span class="assigned-chip">{{ p.name }}{% if p.status == 'Completed' %} · completed{% endif %}</span>{% endfor %}</div>
+          {% else %}<p class="muted-text">No patients assigned yet.</p>{% endif %}
+        </div>
+        <details class="edit-doctor"><summary>Edit doctor details</summary>
+          <form method="post" action="{{ url_for('edit_doctor', doctor_id=d.id) }}" class="patient-form edit-form">
+            <label>Doctor name<input name="name" value="{{ d.name }}" maxlength="80" required></label>
+            <label>Specialization<select name="specialization" required>{% for spec in specializations %}<option value="{{ spec }}" {% if spec == d.specialization %}selected{% endif %}>{{ spec }}</option>{% endfor %}</select></label>
+            <label>Maximum active patients<input type="number" name="max_patients" min="1" max="100" value="{{ d.max_patients }}" required></label>
+            <label class="check-label"><input type="checkbox" name="on_duty" {% if d.on_duty %}checked{% endif %}> On duty and accepting assignments</label>
+            <button class="primary-button" type="submit">Save changes</button>
+          </form>
+        </details>
+      </article>
+    {% else %}<section class="panel empty-doctors"><h3>No doctors configured</h3><p>Add a doctor using the form to enable automatic assignment.</p></section>{% endfor %}
+  </section>
+</div>
+{% endblock %}
