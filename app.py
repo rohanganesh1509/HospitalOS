@@ -113,9 +113,12 @@ def dashboard():
         doctor_count = conn.execute("SELECT COUNT(*) FROM doctors WHERE on_duty=1").fetchone()[0]
         unassigned = conn.execute("SELECT COUNT(*) FROM patients WHERE status!='Completed' AND doctor_id IS NULL").fetchone()[0]
     priority_counts = {str(row["priority"]): row["count"] for row in priority_rows}
+    provider = get_provider()
+    processes = provider.get_processes() if provider.is_connected() else []
     return render_template("index.html", patients=patients, total=total, waiting=waiting,
                            completed=completed, priority_counts=priority_counts,
-                           doctor_count=doctor_count, unassigned=unassigned, specializations=SPECIALIZATIONS)
+                           doctor_count=doctor_count, unassigned=unassigned, specializations=SPECIALIZATIONS,
+                           processes=processes)
 
 
 @app.route("/patients", methods=["POST"])
@@ -140,6 +143,9 @@ def add_patient():
         patient_id = cursor.lastrowid
         doctor_id = assign_doctor(conn, patient_id)
         doctor = conn.execute("SELECT name FROM doctors WHERE id=?", (doctor_id,)).fetchone() if doctor_id else None
+        sim_p = provider_manager.get_provider("simulation")
+        if hasattr(sim_p, "register_patient_process"):
+            sim_p.register_patient_process(patient_id, name, doctor_id)
     if doctor:
         flash(f"Added {name}. Automatically assigned to {doctor['name']}.", "success")
     else:
@@ -151,6 +157,9 @@ def add_patient():
 def complete_patient(patient_id):
     with get_db() as conn:
         conn.execute("UPDATE patients SET status='Completed' WHERE id=?", (patient_id,))
+    sim_p = provider_manager.get_provider("simulation")
+    if hasattr(sim_p, "mark_patient_completed"):
+        sim_p.mark_patient_completed(patient_id)
     flash("Patient marked completed; the doctor's active workload has been updated.", "success")
     return redirect(request.referrer or url_for("dashboard"))
 
@@ -159,6 +168,9 @@ def complete_patient(patient_id):
 def unassign_patient(patient_id):
     with get_db() as conn:
         conn.execute("UPDATE patients SET doctor_id=NULL WHERE id=? AND status!='Completed'", (patient_id,))
+    sim_p = provider_manager.get_provider("simulation")
+    if hasattr(sim_p, "mark_patient_unassigned"):
+        sim_p.mark_patient_unassigned(patient_id)
     flash("Doctor assignment removed.", "success")
     return redirect(request.referrer or url_for("dashboard"))
 
@@ -242,13 +254,40 @@ def edit_doctor(doctor_id):
 def run_schedule():
     data = request.get_json(silent=True) or {}
     algorithm = data.get("algorithm", "FCFS")
-    with get_db() as conn:
-        rows = conn.execute("SELECT id, name, arrival_time, burst_time, priority FROM patients WHERE status='Waiting' ORDER BY id").fetchall()
+    quantum = data.get("quantum", 2)
     try:
-        result = schedule_patients([dict(row) for row in rows], algorithm)
+        quantum = int(quantum)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Round Robin quantum must be a positive integer >= 1."}), 400
+
+    provider = get_provider()
+    try:
+        result = provider.get_scheduler_state(algorithm, quantum=quantum)
         return jsonify(result)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/schedule/step", methods=["POST"])
+def step_schedule():
+    data = request.get_json(silent=True) or {}
+    algorithm = data.get("algorithm", "FCFS")
+    quantum = data.get("quantum", 2)
+    try:
+        quantum = int(quantum)
+    except (ValueError, TypeError):
+        return jsonify({"error": "Round Robin quantum must be a positive integer >= 1."}), 400
+
+    provider = get_provider()
+    result = provider.step_scheduler(algorithm, quantum=quantum)
+    return jsonify(result)
+
+
+@app.route("/api/schedule/reset", methods=["POST"])
+def reset_schedule():
+    provider = get_provider()
+    result = provider.reset_scheduler()
+    return jsonify(result)
 
 
 @app.route("/api/bankers", methods=["POST"])
@@ -334,6 +373,36 @@ def system_events():
     limit = request.args.get("limit", 50, type=int)
     provider = get_provider()
     return jsonify([e.to_dict() for e in provider.get_events(limit=limit)])
+
+
+@app.route("/api/system/processes/<int:pid>", methods=["GET"])
+def system_process_detail(pid):
+    provider = get_provider()
+    process = provider.get_process_by_id(pid)
+    if not process:
+        return jsonify({"error": f"Process PID-{pid} not found"}), 404
+    return jsonify(process.to_dict())
+
+
+@app.route("/api/system/processes/<int:pid>/transition", methods=["POST"])
+def system_process_transition(pid):
+    data = request.get_json(silent=True) or {}
+    target_state = data.get("state")
+    reason = data.get("reason")
+    if not target_state:
+        return jsonify({"error": "Missing 'state' in request payload."}), 400
+    provider = get_provider()
+    result = provider.transition_process(pid, target_state, reason=reason)
+    if not result.get("success"):
+        return jsonify(result), 400
+    return jsonify(result)
+
+
+@app.route("/api/system/lifecycle/step", methods=["POST"])
+def system_lifecycle_step():
+    provider = get_provider()
+    result = provider.step_lifecycle()
+    return jsonify(result)
 
 
 init_db()

@@ -28,7 +28,12 @@ class SchedulingEventType:
     COMPLETE = "COMPLETE"
     BLOCK = "BLOCK"
     WAKEUP = "WAKEUP"
+    UNBLOCK = "UNBLOCK"
     IDLE = "IDLE"
+    QUANTUM_EXPIRE = "QUANTUM_EXPIRE"
+    EMERGENCY_PREEMPT = "EMERGENCY_PREEMPT"
+    DEADLINE_WARNING = "DEADLINE_WARNING"
+    DEADLINE_MISS = "DEADLINE_MISS"
 
 
 @dataclass
@@ -47,7 +52,10 @@ class HospitalProcess:
     specialization: str = "General Medicine"
     assigned_resources: Dict[str, int] = field(default_factory=dict)
     memory_pages: int = 2
+    memory_kb: int = 8
     deadline: Optional[int] = None
+    state_reason: str = ""
+    state_history: List[Dict[str, Any]] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -61,6 +69,8 @@ class SchedulingEvent:
     pid: Optional[int] = None
     process_name: Optional[str] = None
     details: str = ""
+    source: str = "simulation"
+    simulation_time: Optional[int] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

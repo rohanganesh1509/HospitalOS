@@ -20,13 +20,86 @@
     <div class="chart-canvas"><canvas id="priorityChart" aria-label="Priority distribution bar chart"></canvas></div>
   </article>
 </section>
+
+<!-- MODULES 1 & 2: LIVE PROCESS STATE MONITOR & PCB INSPECTOR -->
+<section class="panel monitor-panel">
+  <div class="panel-heading">
+    <div>
+      <h3>Live Process State Monitor</h3>
+      <p>Every admitted patient is mapped to an Operating System Process (PCB). Monitor execution across the 5 canonical OS states.</p>
+    </div>
+    <div class="monitor-actions">
+      <span class="concept-tag" id="monitorModeTag">SIMULATION LIFECYCLE</span>
+      <button class="secondary-button" id="stepLifecycleBtn" type="button" title="Advance one process through the simulation lifecycle">▶ Step Lifecycle</button>
+      <button class="secondary-button" id="refreshProcessesBtn" type="button" title="Fetch latest process states">↻ Refresh</button>
+    </div>
+  </div>
+
+  <!-- Honest Live Kernel Disconnected Warning (Shown when Live Kernel Mode is selected and bridge is offline) -->
+  <div id="liveKernelDisconnectedPanel" class="disconnected-banner hidden">
+    <div class="disconnected-icon">⚡</div>
+    <div>
+      <b>Live Kernel Bridge Offline</b>
+      <p>The HospitalOS custom kernel (QEMU serial transport) is not yet connected. No real kernel telemetry is available. Switch to Simulation mode to inspect the active educational process monitor.</p>
+    </div>
+  </div>
+
+  <!-- 5-State Kanban Process State Monitor Grid -->
+  <div class="state-monitor-grid" id="processStateGrid">
+    <article class="state-column state-col-new">
+      <div class="state-col-header">
+        <div class="state-title"><span class="state-dot dot-new"></span><span>NEW</span></div>
+        <span class="state-count" id="count-NEW">0</span>
+      </div>
+      <div class="state-sub">Intake & Triage</div>
+      <div class="state-chips" id="chips-NEW"><div class="empty-state-slot">No processes in NEW</div></div>
+    </article>
+
+    <article class="state-column state-col-ready">
+      <div class="state-col-header">
+        <div class="state-title"><span class="state-dot dot-ready"></span><span>READY</span></div>
+        <span class="state-count" id="count-READY">0</span>
+      </div>
+      <div class="state-sub">Ready Queue (Scheduler)</div>
+      <div class="state-chips" id="chips-READY"><div class="empty-state-slot">No processes in READY</div></div>
+    </article>
+
+    <article class="state-column state-col-running">
+      <div class="state-col-header">
+        <div class="state-title"><span class="state-dot dot-running"></span><span>RUNNING</span></div>
+        <span class="state-count" id="count-RUNNING">0</span>
+      </div>
+      <div class="state-sub">CPU / Doctor Executing</div>
+      <div class="state-chips" id="chips-RUNNING"><div class="empty-state-slot">No processes in RUNNING</div></div>
+    </article>
+
+    <article class="state-column state-col-waiting">
+      <div class="state-col-header">
+        <div class="state-title"><span class="state-dot dot-waiting"></span><span>WAITING</span></div>
+        <span class="state-count" id="count-WAITING">0</span>
+      </div>
+      <div class="state-sub">Blocked on Resource / Doctor</div>
+      <div class="state-chips" id="chips-WAITING"><div class="empty-state-slot">No processes in WAITING</div></div>
+    </article>
+
+    <article class="state-column state-col-term">
+      <div class="state-col-header">
+        <div class="state-title"><span class="state-dot dot-term"></span><span>TERMINATED</span></div>
+        <span class="state-count" id="count-TERMINATED">0</span>
+      </div>
+      <div class="state-sub">Discharged / Completed</div>
+      <div class="state-chips" id="chips-TERMINATED"><div class="empty-state-slot">No processes in TERMINATED</div></div>
+    </article>
+  </div>
+</section>
+
 <section class="content-grid">
   <article class="panel">
     <div class="panel-heading"><div><h3>Patient process queue</h3><p>Each patient is represented as an OS process.</p></div><span class="count-chip">{{ patients|length }} records</span></div>
-    <div class="table-wrap"><table><thead><tr><th>PROCESS</th><th>ARRIVAL</th><th>DURATION</th><th>PRIORITY</th><th>DOCTOR</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>
+    <div class="table-wrap"><table><thead><tr><th>PROCESS</th><th>ARRIVAL</th><th>DURATION</th><th>PRIORITY</th><th>DOCTOR</th><th>STATUS</th><th>OS STATE</th><th>ACTION</th></tr></thead><tbody>
     {% for p in patients %}
-      <tr><td><div class="patient-cell"><span class="patient-avatar">{{ p.name[:1]|upper }}</span><div><b>{{ p.name }}</b><small>PID-{{ '%03d'|format(p.id) }}</small></div></div></td><td>{{ p.arrival_time }}</td><td>{{ p.burst_time }} units</td><td><span class="priority p{{ [p.priority, 4]|min }}">{{ p.priority }}</span></td><td>{% if p.doctor_name %}<span class="doctor-pill">{{ p.doctor_name }}</span>{% else %}<span class="status unassigned">Unassigned</span>{% endif %}</td><td><span class="status {{ 'done' if p.status == 'Completed' else 'waiting' }}">{{ p.status }}</span></td><td><div class="action-row">{% if p.status != 'Completed' %}<form method="post" action="{{ url_for('complete_patient', patient_id=p.id) }}"><button class="tiny-button" type="submit" title="Mark completed">✓</button></form>{% if p.doctor_id %}<form method="post" action="{{ url_for('unassign_patient', patient_id=p.id) }}"><button class="tiny-button neutral" type="submit" title="Unassign doctor">↶</button></form>{% endif %}{% endif %}</div></td></tr>
-    {% else %}<tr><td colspan="7" class="empty">No patients yet. Add your first patient using the form.</td></tr>{% endfor %}
+      <tr class="patient-table-row" data-pid="{{ p.id }}"><td><div class="patient-cell"><span class="patient-avatar">{{ p.name[:1]|upper }}</span><div><b>{{ p.name }}</b><small>PID-{{ '%03d'|format(p.id) }}</small></div></div></td><td>{{ p.arrival_time }}</td><td>{{ p.burst_time }} units</td><td><span class="priority p{{ [p.priority, 4]|min }}">{{ p.priority }}</span></td><td>{% if p.doctor_name %}<span class="doctor-pill">{{ p.doctor_name }}</span>{% else %}<span class="status unassigned">Unassigned</span>{% endif %}</td><td><span class="status {{ 'done' if p.status == 'Completed' else 'waiting' }}">{{ p.status }}</span></td><td class="os-state-cell"><span class="state-pill state-{{ 'TERMINATED' if p.status == 'Completed' else ('WAITING' if not p.doctor_id else 'READY') }}">{{ 'TERMINATED' if p.status == 'Completed' else ('WAITING' if not p.doctor_id else 'READY') }}</span></td><td><div class="action-row"><button class="tiny-button pcb-trigger" type="button" title="Inspect Process Control Block (PCB)" onclick="openPcbInspector({{ p.id }})">PCB</button>{% if p.status != 'Completed' %}<form method="post" action="{{ url_for('complete_patient', patient_id=p.id) }}"><button class="tiny-button" type="submit" title="Mark completed">✓</button></form>{% if p.doctor_id %}<form method="post" action="{{ url_for('unassign_patient', patient_id=p.id) }}"><button class="tiny-button neutral" type="submit" title="Unassign doctor">↶</button></form>{% endif %}{% endif %}</div></td></tr>
+    {% else %}<tr><td colspan="8" class="empty">No patients yet. Add your first patient using the form.</td></tr>{% endfor %}
     </tbody></table></div>
   </article>
   <article class="panel add-panel">
@@ -42,13 +115,182 @@
   </article>
 </section>
 <section class="panel scheduler-panel">
-  <div class="panel-heading"><div><h3>CPU scheduling simulator</h3><p>Choose an algorithm to compare process execution and performance.</p></div><span class="concept-tag">PROCESS SCHEDULING</span></div>
-  <div class="scheduler-controls"><label for="algorithm">Scheduling algorithm</label><select id="algorithm"><option value="FCFS">First Come, First Served (FCFS)</option><option value="SJF">Shortest Job First (SJF)</option><option value="PRIORITY">Priority Scheduling</option></select><button class="primary-button" id="runSchedule">▶ Run simulation</button></div>
+  <div class="panel-heading">
+    <div>
+      <h3>CPU scheduling simulator</h3>
+      <p>Compare operating system scheduling algorithms, visualize multi-slice timelines, and evaluate clinical deadline adherence.</p>
+    </div>
+    <span class="concept-tag">PROCESS SCHEDULING &amp; DEADLINES</span>
+  </div>
+
+  <div class="scheduler-controls">
+    <div class="control-group">
+      <label for="algorithm">Scheduling algorithm</label>
+      <select id="algorithm">
+        <option value="FCFS">First Come, First Served (FCFS)</option>
+        <option value="SJF">Shortest Job First (SJF - Non-preemptive)</option>
+        <option value="SRTF">Shortest Remaining Time First (SRTF - Preemptive)</option>
+        <option value="ROUND_ROBIN">Round Robin (RR - Time-sliced)</option>
+        <option value="PRIORITY">Priority Scheduling (Clinical Urgency &amp; Preemption)</option>
+        <option value="HOSPITAL_ADAPTIVE">Hospital Adaptive (Urgency + Aging + Short Job + Deadline)</option>
+      </select>
+    </div>
+
+    <div id="quantumContainer" class="control-group quantum-group hidden">
+      <label for="timeQuantum">Time Quantum (u)</label>
+      <input type="number" id="timeQuantum" value="2" min="1" max="20" style="width: 80px;">
+    </div>
+
+    <div class="button-group">
+      <button class="primary-button" id="runSchedule">▶ Run simulation</button>
+      <button class="secondary-button" id="stepScheduleBtn" type="button" title="Step forward one execution slice and update Process State Monitor">⏭ Step Scheduler</button>
+      <button class="secondary-button" id="resetScheduleBtn" type="button" title="Reset scheduler execution and restore ready queue">↺ Reset</button>
+    </div>
+  </div>
+
+  <!-- Educational Formula & Policy Banner -->
+  <div id="algoExplanation" class="algo-explanation-box">
+    <b>First-Come, First-Served (FCFS):</b> Non-preemptive scheduling in order of arrival time. Simple and starvation-free, but susceptible to the convoy effect for long clinical bursts.
+  </div>
+
+  <!-- Live Scheduler Status Strip (Module 3/4/9 Integration) -->
+  <div id="schedulerStatusStrip" class="scheduler-status-strip">
+    <div class="status-stat"><span class="stat-lbl">Active Algorithm</span><b id="statusAlgo">FCFS</b></div>
+    <div class="status-stat"><span class="stat-lbl">Simulation Clock</span><b id="statusClock">0u</b></div>
+    <div class="status-stat"><span class="stat-lbl">Currently Running</span><b id="statusRunningPid" class="running-pill">IDLE</b></div>
+    <div class="status-stat"><span class="stat-lbl">Ready Queue</span><b id="statusReadyQueue">—</b></div>
+    <div class="status-stat"><span class="stat-lbl">Time Quantum</span><b id="statusQuantum">—</b></div>
+    <div class="status-stat"><span class="stat-lbl">Next Deadline</span><b id="statusNextDeadline">—</b></div>
+  </div>
+
   <div id="scheduleMessage" class="result-message">Choose an algorithm and run the simulation to see results.</div>
+
+  <!-- Extended Performance Metrics Grid -->
   <div id="metrics" class="metrics-grid hidden"></div>
-  <div id="ganttArea" class="gantt-area hidden"><h4>Gantt chart · simulated execution timeline</h4><div id="gantt" class="gantt"></div><div id="ganttTicks" class="gantt-ticks"></div></div>
-  <div id="performanceChartArea" class="performance-chart-area hidden"><h4>Per-process performance comparison</h4><div class="performance-canvas"><canvas id="performanceChart" aria-label="Waiting and turnaround time by process"></canvas></div></div>
-  <div id="scheduleTableArea" class="table-wrap hidden"><table><thead><tr><th>PROCESS</th><th>START</th><th>COMPLETION</th><th>WAITING TIME</th><th>TURNAROUND TIME</th></tr></thead><tbody id="scheduleRows"></tbody></table></div>
+
+  <!-- Gantt Chart · CPU Timeline -->
+  <div id="ganttArea" class="gantt-area hidden">
+    <div class="gantt-header">
+      <h4>Gantt chart · simulated CPU execution timeline</h4>
+      <div class="gantt-legend">
+        <span class="legend-chip"><i class="leg-box leg-normal"></i> Normal</span>
+        <span class="legend-chip"><i class="leg-box leg-preempt"></i> Preempted</span>
+        <span class="legend-chip"><i class="leg-box leg-emergency"></i> Emergency Preempt</span>
+        <span class="legend-chip"><i class="leg-box leg-quantum"></i> Quantum Expired</span>
+        <span class="legend-chip"><i class="leg-box leg-complete"></i> Completed</span>
+        <span class="legend-chip"><i class="leg-box leg-idle"></i> CPU Idle</span>
+      </div>
+    </div>
+    <div id="gantt" class="gantt"></div>
+    <div id="ganttTicks" class="gantt-ticks"></div>
+
+    <!-- Scheduling Events Stream -->
+    <div id="schedulingEventsArea" class="scheduling-events-area">
+      <h5>Scheduling &amp; Preemption Event Log <small>(source: simulation)</small></h5>
+      <div id="schedulingEventsList" class="events-log-list"></div>
+    </div>
+  </div>
+
+  <div id="performanceChartArea" class="performance-chart-area hidden">
+    <h4>Per-process performance comparison</h4>
+    <div class="performance-canvas"><canvas id="performanceChart" aria-label="Waiting, turnaround, and response time by process"></canvas></div>
+  </div>
+
+  <div id="scheduleTableArea" class="table-wrap hidden">
+    <table>
+      <thead>
+        <tr>
+          <th>PROCESS</th>
+          <th>ARRIVAL</th>
+          <th>DURATION</th>
+          <th>PRIORITY</th>
+          <th>START</th>
+          <th>COMPLETION</th>
+          <th>WAITING</th>
+          <th>TURNAROUND</th>
+          <th>RESPONSE</th>
+          <th>DEADLINE</th>
+          <th>PREEMPTIONS</th>
+        </tr>
+      </thead>
+      <tbody id="scheduleRows"></tbody>
+    </table>
+  </div>
 </section>
+
+<!-- PCB INSPECTOR MODAL -->
+<div id="pcbInspectorModal" class="modal-backdrop hidden" onclick="if(event.target===this)closePcbInspector()">
+  <div class="modal-card pcb-card">
+    <div class="modal-header">
+      <div>
+        <span class="eyebrow">PROCESS CONTROL BLOCK (PCB)</span>
+        <h2 id="pcbTitle">Patient — PID-001</h2>
+      </div>
+      <div class="modal-header-actions">
+        <span id="pcbStatePill" class="state-pill state-RUNNING">RUNNING</span>
+        <button class="modal-close" type="button" onclick="closePcbInspector()" title="Close PCB Inspector">✕</button>
+      </div>
+    </div>
+
+    <!-- Mapping Banner -->
+    <div class="mapping-banner">
+      <div class="map-step"><b>PATIENT</b><span id="pcbPatientName">—</span></div>
+      <div class="map-arrow">➔</div>
+      <div class="map-step"><b>OS PROCESS (PCB)</b><span id="pcbPidTag">PID-001</span></div>
+      <div class="map-arrow">➔</div>
+      <div class="map-step"><b>OS STATE</b><span id="pcbStateBanner">RUNNING</span></div>
+    </div>
+
+    <!-- State Lifecycle Progression Flow -->
+    <div class="lifecycle-flow">
+      <h4>Lifecycle State Progression</h4>
+      <div class="flow-nodes">
+        <div class="flow-node" id="node-NEW"><span>NEW</span><small>Intake</small></div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-node" id="node-READY"><span>READY</span><small>Queued</small></div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-node" id="node-RUNNING"><span>RUNNING</span><small>Executing</small></div>
+        <div class="flow-arrow bidirectional">⇄</div>
+        <div class="flow-node" id="node-WAITING"><span>WAITING</span><small>Blocked</small></div>
+        <div class="flow-arrow">➔</div>
+        <div class="flow-node" id="node-TERMINATED"><span>TERMINATED</span><small>Exit</small></div>
+      </div>
+      <p id="pcbStateReason" class="flow-reason"></p>
+    </div>
+
+    <!-- PCB Fields Grid -->
+    <div class="pcb-grid">
+      <div class="pcb-field"><span>Process ID</span><b id="pcbPid">—</b></div>
+      <div class="pcb-field"><span>Priority</span><b id="pcbPriority">—</b></div>
+      <div class="pcb-field"><span>Arrival Time</span><b id="pcbArrival">—</b></div>
+      <div class="pcb-field"><span>CPU Burst</span><b id="pcbBurst">—</b></div>
+      <div class="pcb-field"><span>Remaining Time</span><b id="pcbRemaining">—</b></div>
+      <div class="pcb-field"><span>Doctor Assigned</span><b id="pcbDoctor">—</b></div>
+      <div class="pcb-field"><span>Specialization</span><b id="pcbSpecialization">—</b></div>
+      <div class="pcb-field"><span>Memory Footprint</span><b id="pcbMemory">—</b></div>
+      <div class="pcb-field"><span>Allocated Resources</span><b id="pcbResources">—</b></div>
+      <div class="pcb-field"><span>Clinical Deadline</span><b id="pcbDeadline">—</b></div>
+    </div>
+
+    <!-- State Transition History -->
+    <div class="pcb-history-sec">
+      <h4>State Transition History <small>(source: simulation)</small></h4>
+      <div id="pcbHistoryList" class="history-list"></div>
+    </div>
+
+    <!-- Interactive Transition Controls -->
+    <div class="pcb-actions-sec">
+      <h4>Simulate Process State Transition</h4>
+      <div class="transition-buttons">
+        <button class="trans-btn btn-ready" id="btnTransReady" type="button" onclick="transitionCurrentProcess('READY')">Admit to READY</button>
+        <button class="trans-btn btn-running" id="btnTransRunning" type="button" onclick="transitionCurrentProcess('RUNNING')">Dispatch to RUNNING</button>
+        <button class="trans-btn btn-waiting" id="btnTransWaiting" type="button" onclick="transitionCurrentProcess('WAITING')">Block on Resource (WAITING)</button>
+        <button class="trans-btn btn-term" id="btnTransTerm" type="button" onclick="transitionCurrentProcess('TERMINATED')">Complete (TERMINATED)</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script src="{{ url_for('static', filename='app.js') }}"></script>
+<script src="{{ url_for('static', filename='process-monitor.js') }}"></script>
 {% endblock %}
