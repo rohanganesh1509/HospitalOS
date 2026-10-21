@@ -2,6 +2,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 import sqlite3
 from pathlib import Path
 from algorithms import schedule_patients, bankers_algorithm
+from providers import provider_manager, get_provider
 
 app = Flask(__name__)
 app.secret_key = "hospitalos-educational-demo-key"
@@ -263,6 +264,76 @@ def run_bankers():
 @app.route("/resources")
 def resources():
     return render_template("resources.html")
+
+
+@app.context_processor
+def inject_system_mode():
+    provider = get_provider()
+    return {
+        "system_mode": provider_manager.get_active_mode(),
+        "is_connected": provider.is_connected(),
+        "available_modes": provider_manager.get_available_modes(),
+    }
+
+
+@app.route("/api/system/mode", methods=["GET", "POST"])
+def system_mode():
+    if request.method == "POST":
+        data = request.get_json(silent=True) or {}
+        mode = data.get("mode", "simulation")
+        try:
+            provider_manager.set_active_mode(mode)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 400
+    current_mode = provider_manager.get_active_mode()
+    provider = get_provider()
+    return jsonify({
+        "mode": current_mode,
+        "is_connected": provider.is_connected(),
+        "available_modes": provider_manager.get_available_modes(),
+    })
+
+
+@app.route("/api/system/snapshot", methods=["GET"])
+def system_snapshot():
+    algorithm = request.args.get("algorithm", "FCFS")
+    provider = get_provider()
+    snapshot = provider.get_system_snapshot(algorithm=algorithm)
+    return jsonify(snapshot.to_dict())
+
+
+@app.route("/api/system/processes", methods=["GET"])
+def system_processes():
+    provider = get_provider()
+    return jsonify([p.to_dict() for p in provider.get_processes()])
+
+
+@app.route("/api/system/resources", methods=["GET"])
+def system_resources():
+    provider = get_provider()
+    return jsonify({
+        "resources": [r.to_dict() for r in provider.get_resources()],
+        "deadlock": provider.get_deadlock_state().to_dict(),
+    })
+
+
+@app.route("/api/system/memory", methods=["GET"])
+def system_memory():
+    provider = get_provider()
+    return jsonify(provider.get_memory_state().to_dict())
+
+
+@app.route("/api/system/synchronization", methods=["GET"])
+def system_synchronization():
+    provider = get_provider()
+    return jsonify(provider.get_synchronization_state().to_dict())
+
+
+@app.route("/api/system/events", methods=["GET"])
+def system_events():
+    limit = request.args.get("limit", 50, type=int)
+    provider = get_provider()
+    return jsonify([e.to_dict() for e in provider.get_events(limit=limit)])
 
 
 init_db()
