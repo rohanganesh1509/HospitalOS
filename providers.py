@@ -1194,6 +1194,12 @@ class SimulationProvider(HospitalOSProvider):
                 category="MEMORY",
                 payload={"pid": pid, "pages_needed": pages_needed, "free_frames": len(free_frames)},
             )
+            if pid in self._process_states:
+                self.transition_process(
+                    pid,
+                    ProcessState.WAITING,
+                    f"Blocked waiting for {pages_needed} physical memory frame(s); only {len(free_frames)} available."
+                )
             return {
                 "success": False,
                 "allocated": False,
@@ -1248,6 +1254,20 @@ class SimulationProvider(HospitalOSProvider):
                 category="MEMORY",
                 payload={"pid": pid, "freed_frames": freed_frames},
             )
+
+        # Unblock any processes that were waiting on memory
+        for wait_pid, p_st in list(self._process_states.items()):
+            if p_st["state"] == ProcessState.WAITING and "memory" in p_st.get("state_reason", "").lower():
+                cur_free = sum(1 for f in self._memory_frames if f.status == "free")
+                req_pages = p_st.get("memory_pages", 2)
+                if cur_free >= req_pages:
+                    self.allocate_memory(wait_pid, req_pages)
+                    self.transition_process(
+                        wait_pid,
+                        ProcessState.READY,
+                        f"Physical frames freed; unblocked PID-{wait_pid:03d} to READY queue."
+                    )
+                    break
 
         return {
             "success": True,
