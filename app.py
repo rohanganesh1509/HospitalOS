@@ -323,11 +323,21 @@ def events():
 @app.context_processor
 def inject_system_mode():
     provider = get_provider()
+    kernel_status = provider.get_kernel_status() if hasattr(provider, "get_kernel_status") else {}
     return {
         "system_mode": provider_manager.get_active_mode(),
         "is_connected": provider.is_connected(),
         "available_modes": provider_manager.get_available_modes(),
+        "kernel_status": kernel_status,
     }
+
+
+@app.route("/api/system/kernel/status", methods=["GET"])
+def system_kernel_status():
+    provider = get_provider()
+    if hasattr(provider, "get_kernel_status"):
+        return jsonify(provider.get_kernel_status())
+    return jsonify({"status": "UNAVAILABLE"}), 400
 
 
 @app.route("/api/system/mode", methods=["GET", "POST"])

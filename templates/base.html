@@ -19,9 +19,16 @@
     <a class="nav-link {% if request.endpoint == 'events' %}active{% endif %}" href="{{ url_for('events') }}">⌨ <span>Simulation Events</span></a>
     <div class="sidebar-note">
       <strong>Source: {{ 'Simulation Engine' if system_mode == 'simulation' else 'Live Kernel' }}</strong>
-      <p>{% if system_mode == 'simulation' %}Local SQLite &amp; unified OS simulation model.{% else %}QEMU Kernel Bridge (Offline).{% endif %}</p>
+      <p>{% if system_mode == 'simulation' %}Built-In Educational Kernel Simulation Engine.{% else %}QEMU Kernel Bridge (Offline).{% endif %}</p>
       <span class="status-dot {% if not is_connected %}offline{% endif %}"></span>
       {% if is_connected %}Simulation online{% else %}Kernel bridge offline{% endif %}
+      {% if system_mode == 'simulation' and kernel_status %}
+      <div style="margin-top: 8px; font-size: 11px; opacity: 0.85; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 6px; line-height: 1.4;">
+        <span style="display: block; font-weight: 600; letter-spacing: 0.5px;">BUILT-IN KERNEL: {{ kernel_status.status }}</span>
+        <span>Processes: {{ kernel_status.processes_count }} · Events: {{ kernel_status.events_count }}</span><br>
+        <span>RAM: {{ kernel_status.memory_used_kb }}/{{ kernel_status.memory_total_kb }} KB</span>
+      </div>
+      {% endif %}
     </div>
     <div class="sidebar-footer">OPERATING SYSTEMS PROJECT<br><b>HospitalOS v2.0</b></div>
   </aside>
