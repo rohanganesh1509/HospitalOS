@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block heading %}Simulation event &amp; system call monitor{% endblock %}
+{% block content %}
+<section class="welcome-row">
+  <div>
+    <h2>Simulation Event &amp; System Call Monitor</h2>
+    <p>Real-time terminal stream tracking process transitions, scheduler decisions, resource requests, memory allocations, and synchronization locks.</p>
+  </div>
+  <span class="concept-tag">MODULE 11: SYSTEM TELEMETRY (SIMULATION)</span>
+</section>
+
+<!-- HONEST LIVE KERNEL DISCONNECTED BANNER -->
+<div id="eventsOfflineBanner" class="disconnected-banner hidden" style="margin-bottom: 20px;">
+  <div class="disconnected-icon">⚡</div>
+  <div>
+    <b>Live Kernel Bridge Offline</b>
+    <p>The HospitalOS custom kernel (QEMU serial transport) is not currently connected. No simulated events are ever masqueraded as genuine kernel telemetry. Switch to Simulation mode to inspect the active educational simulation event bus.</p>
+  </div>
+</div>
+
+<div id="eventsMainConsole">
+  <!-- CATEGORY FILTER TABS & TERMINAL CONTROLS -->
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Kernel &amp; subsystem event stream</h3>
+        <p>Live event log emitted by HospitalOS provider components. All events originate with <code>source="simulation"</code>.</p>
+      </div>
+      <div class="monitor-actions">
+        <button class="secondary-button" id="toggleAutoRefreshBtn" type="button" onclick="toggleAutoRefresh()">⏸ Pause Polling</button>
+        <button class="secondary-button" type="button" onclick="clearTerminal()">⌫ Clear Log</button>
+        <button class="secondary-button" type="button" onclick="fetchEventsAndSyscalls()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <!-- Category Filter Bar -->
+    <div class="cat-tabs-bar" style="display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px;">
+      <button class="cat-tab-btn active" data-cat="ALL" type="button">All Events</button>
+      <button class="cat-tab-btn" data-cat="PROCESS" type="button">Process State</button>
+      <button class="cat-tab-btn" data-cat="SCHEDULER" type="button">CPU Scheduler</button>
+      <button class="cat-tab-btn" data-cat="RESOURCE" type="button">Resources</button>
+      <button class="cat-tab-btn" data-cat="MEMORY" type="button">Memory Manager</button>
+      <button class="cat-tab-btn" data-cat="SYNC" type="button">Synchronization</button>
+      <button class="cat-tab-btn" data-cat="DEADLOCK" type="button">Deadlock / Banker's</button>
+    </div>
+
+    <!-- Terminal Window -->
+    <div class="terminal-window">
+      <div class="terminal-bar">
+        <span class="term-circle red"></span>
+        <span class="term-circle yellow"></span>
+        <span class="term-circle green"></span>
+        <span class="term-title">hospitalos-sim://telemetry/event-bus (filtered: active category)</span>
+      </div>
+      <div class="terminal-body" id="eventTerminalBody">
+        <div class="term-line term-muted"># Initializing event monitor stream...</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EDUCATIONAL SIMULATED SYSTEM CALL MONITOR -->
+  <section class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Simulated OS system calls (Syscalls)</h3>
+        <p>Educational service calls dispatched by user-space patient processes to request operating system operations.</p>
+      </div>
+      <span class="concept-tag">SIMULATED SYSCALLS</span>
+    </div>
+
+    <div class="terminal-window">
+      <div class="terminal-bar">
+        <span class="term-circle red"></span>
+        <span class="term-circle yellow"></span>
+        <span class="term-circle green"></span>
+        <span class="term-title">hospitalos-sim://kernel/syscall-tracer</span>
+      </div>
+      <div class="terminal-body" id="syscallTerminalBody">
+        <div class="term-line term-muted"># Listening for simulated system call dispatches...</div>
+      </div>
+    </div>
+
+    <div class="tip-box" style="margin-top: 14px;">
+      <b>Educational Note on System Calls:</b>
+      <p>In a production operating system, user applications transition into kernel space via software interrupts or the <code>syscall</code> assembly instruction. In this educational web simulation, these calls model system service routines (e.g. <code>resource_request()</code>, <code>memory_allocate()</code>, <code>lock_acquire()</code>, <code>process_exit()</code>) with identical state-machine semantics.</p>
+    </div>
+  </section>
+</div>
+
+<script src="{{ url_for('static', filename='events.js') }}"></script>
+{% endblock %}

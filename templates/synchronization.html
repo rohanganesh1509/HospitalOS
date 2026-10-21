@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block heading %}Synchronization &amp; concurrency lab{% endblock %}
+{% block content %}
+<section class="welcome-row">
+  <div>
+    <h2>Simulated Synchronization &amp; Shared Resource Control</h2>
+    <p>Explore binary mutex locks, counting semaphores, critical section enforcement, and wait-queue thread/process wakeups.</p>
+  </div>
+  <span class="concept-tag">MODULE 10: SYNCHRONIZATION &amp; LOCKS</span>
+</section>
+
+<!-- MODULE 10: SYNCHRONIZATION PRIMITIVES GRID -->
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <h3>Clinical concurrency primitives</h3>
+      <p>Hospital critical sections protected by operating system synchronization mechanisms.</p>
+    </div>
+    <span class="count-chip">3 Active Primitives</span>
+  </div>
+  <div class="resource-cards-grid" id="syncCardsGrid">
+    <div class="empty-state-slot">Loading synchronization primitives...</div>
+  </div>
+</section>
+
+<!-- INTERACTIVE LOCK/SEMAPHORE EXPERIMENTATION TEST BENCH -->
+<section class="content-grid">
+  <!-- Interactive Acquire / Release Controls -->
+  <article class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Interactive synchronization test bench</h3>
+        <p>Acquire or release a critical section lock on behalf of an OS patient process.</p>
+      </div>
+      <span class="concept-tag">LOCK OPERATIONS</span>
+    </div>
+    <div class="patient-form">
+      <label>Target process
+        <select id="syncPidSelect"></select>
+      </label>
+      <label>Synchronization primitive
+        <select id="syncPrimitiveSelect">
+          <option value="mutex_ot">Operating Theatre Mutex (Binary Lock)</option>
+          <option value="mutex_scanner">Diagnostic Scanner Mutex (Binary Lock)</option>
+          <option value="sem_icu">ICU Beds Semaphore (Counting, 3 units)</option>
+        </select>
+      </label>
+      <div class="button-group" style="margin-top: 10px;">
+        <button class="primary-button" id="btnSyncAcquire" type="button">Acquire / Wait — P()</button>
+        <button class="secondary-button" id="btnSyncRelease" type="button">Release / Signal — V()</button>
+      </div>
+      <div id="syncOpResult" class="result-message" style="margin-top: 14px;">Select a process and primitive to test contention and unblocking.</div>
+    </div>
+    <div class="tip-box" style="margin-top: 16px;">
+      <b>Concurrency Rule:</b>
+      <p>Only the process currently holding a mutex lock is authorized to release it. Attempting to release a lock owned by another process will be rejected with an authorization error.</p>
+    </div>
+  </article>
+
+  <!-- Educational Explainer -->
+  <article class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>What this demonstrates</h3>
+        <p>Key operating system concurrency principles in a hospital setting.</p>
+      </div>
+      <span class="concept-tag">THEORY</span>
+    </div>
+    <div class="explain-grid" style="grid-template-columns: 1fr; gap: 14px;">
+      <div>
+        <b>Binary Mutex Locks (Operating Theatre &amp; Scanner)</b>
+        <p>Guarantees mutual exclusion: only one patient process may enter the critical section at any instant. If a second process calls <code>P()</code>, it is blocked to <code>WAITING</code> and appended to the primitive's wait queue.</p>
+      </div>
+      <div>
+        <b>Counting Semaphores (ICU Beds)</b>
+        <p>Maintains an integer counter initialized to 3 units. Up to 3 processes can enter concurrently. When the counter drops to 0, subsequent processes are blocked until an existing occupant issues a <code>V()</code> signal.</p>
+      </div>
+      <div>
+        <b>Wait Queue &amp; Wakeup Semantics</b>
+        <p>When a resource is released via <code>release_lock()</code>, HospitalOS signals the head of the wait queue, transitioning that process from <code>WAITING → READY</code>, ready to be dispatched by the CPU scheduler.</p>
+      </div>
+    </div>
+  </article>
+</section>
+
+<script src="{{ url_for('static', filename='sync.js') }}"></script>
+{% endblock %}

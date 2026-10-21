@@ -275,6 +275,15 @@ class TestWebRoutesAndRegression(unittest.TestCase):
         self.assertEqual(r.status_code, 400)
 
     def test_api_schedule_step_and_reset(self):
+        # Admit a patient so there is an active process to schedule and step
+        self.client.post("/patients", data={
+            "name": "Step Test Patient",
+            "arrival_time": "0",
+            "burst_time": "4",
+            "priority": "2",
+            "specialization": "General Medicine"
+        })
+
         # Test step
         r = self.client.post("/api/schedule/step", json={"algorithm": "FCFS"})
         self.assertEqual(r.status_code, 200)

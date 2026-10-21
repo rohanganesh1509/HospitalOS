@@ -668,6 +668,8 @@ def schedule_patients(patients: List[Dict[str, Any]], algorithm: str = "FCFS", q
             "is_emergency": p["is_emergency"],
         })
 
+    results.sort(key=lambda r: (r["completion_time"], r["start_time"], r["id"]))
+
     n = len(results)
     avg_waiting = round(total_waiting / n, 2) if n else 0.0
     avg_turnaround = round(total_turnaround / n, 2) if n else 0.0

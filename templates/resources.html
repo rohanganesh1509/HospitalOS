@@ -1,18 +1,152 @@
 {% extends "base.html" %}
-{% block heading %}Deadlock avoidance lab{% endblock %}
+{% block heading %}Hospital resources &amp; deadlock lab{% endblock %}
 {% block content %}
-<section class="welcome-row"><div><h2>Banker's Algorithm</h2><p>Test whether a resource-allocation state is safe.</p></div><span class="concept-tag">DEADLOCK AVOIDANCE</span></section>
+<section class="welcome-row">
+  <div>
+    <h2>Resource Manager &amp; Deadlock Lab</h2>
+    <p>Monitor multi-instance clinical resources, inspect the live Resource Allocation Graph (RAG), and evaluate Banker's deadlock avoidance.</p>
+  </div>
+  <span class="concept-tag">MODULES 5, 6 &amp; 7: RESOURCES &amp; DEADLOCK</span>
+</section>
+
+<!-- MODULE 5: LIVE HOSPITAL RESOURCES INVENTORY -->
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <h3>Hospital resource pool</h3>
+      <p>Multi-instance clinical hardware and staff modeled as shared OS resources.</p>
+    </div>
+    <span class="count-chip" id="resourceCountChip">6 Resource Types</span>
+  </div>
+  <div class="resource-cards-grid" id="resourceCardsGrid">
+    <div class="empty-state-slot">Loading hospital resource pool...</div>
+  </div>
+</section>
+
+<!-- INTERACTIVE RESOURCE OPERATIONS & RAG (MODULE 6) -->
+<section class="content-grid">
+  <!-- Interactive Resource Request/Release Controls -->
+  <article class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Simulate resource request / release</h3>
+        <p>Trigger dynamic allocations. If a resource is exhausted or unsafe, the process blocks to WAITING.</p>
+      </div>
+      <span class="concept-tag">RESOURCE ALLOCATION</span>
+    </div>
+    <div class="patient-form">
+      <label>Target patient process
+        <select id="opPid"></select>
+      </label>
+      <div class="form-two">
+        <label>Resource type
+          <select id="opResourceId">
+            <option value="icu_bed">ICU Bed (5 total)</option>
+            <option value="ventilator">Ventilator (3 total)</option>
+            <option value="monitor">Patient Monitor (8 total)</option>
+            <option value="scanner">Diagnostic Scanner (1 total)</option>
+            <option value="operating_theatre">Operating Theatre (2 total)</option>
+            <option value="doctors">On-Duty Doctors (3 total)</option>
+          </select>
+        </label>
+        <label>Units requested/released
+          <input type="number" id="opUnits" value="1" min="1" max="5">
+        </label>
+      </div>
+      <div class="button-group" style="margin-top: 10px;">
+        <button class="primary-button" id="btnRequestRes" type="button">Request Resource (P)</button>
+        <button class="secondary-button" id="btnReleaseRes" type="button">Release Resource (V)</button>
+      </div>
+      <div id="opFeedbackMessage" class="result-message" style="margin-top: 14px;">Select a process and resource to simulate allocation.</div>
+    </div>
+    <div class="tip-box" style="margin-top: 16px;">
+      <b>OS Resource Semantics:</b>
+      <p>When a process requests an unavailable resource, HospitalOS transitions its state from <code>RUNNING → WAITING</code>. When another process releases that resource, the highest-urgency waiter is unblocked to <code>WAITING → READY</code>.</p>
+    </div>
+  </article>
+
+  <!-- Live Deadlock Status & Banker's Integration (Module 7) -->
+  <article class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Live Banker's deadlock avoidance status</h3>
+        <p>Evaluates whether current maximum resource claims can be satisfied safely.</p>
+      </div>
+      <span id="bankerSafeBadge" class="badge badge-safe">SYSTEM SAFE</span>
+    </div>
+    <div class="status-box">
+      <div id="bankerSafeSequence" class="safe-sequence-box">Safe Sequence: Checking...</div>
+      <p class="text-muted" style="margin-top: 8px; font-size: 13px;">
+        Banker's Algorithm guarantees that granting a request will never trap the system in an inescapable circular wait. If a tentative allocation leaves no safe sequence, the request is denied with <code>RESOURCE_DENIED_UNSAFE</code>.
+      </p>
+    </div>
+    <div style="margin-top: 16px;">
+      <h4>RAG Cycle Status</h4>
+      <div style="margin-top: 6px;">
+        <span id="ragCycleBadge" class="badge badge-safe">NO CYCLE DETECTED</span>
+      </div>
+      <div id="ragCycleNodes" class="cycle-path-box hidden"></div>
+    </div>
+  </article>
+</section>
+
+<!-- MODULE 6: RESOURCE ALLOCATION GRAPH (RAG) VISUALIZATION -->
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <h3>Resource Allocation Graph (RAG)</h3>
+      <p>Bipartite directed graph showing process nodes (circles) and resource nodes (rectangles). Green solid arrows indicate allocations (Resource ➔ Process); orange dashed arrows indicate requests / waiting (Process ➔ Resource).</p>
+    </div>
+    <div class="rag-legend">
+      <span class="legend-chip"><i class="leg-box leg-alloc"></i> Allocation (R ➔ P)</span>
+      <span class="legend-chip"><i class="leg-box leg-req"></i> Request / Waiting (P ➔ R)</span>
+    </div>
+  </div>
+  <div class="rag-svg-container" style="overflow-x: auto; background: #0f172a; border-radius: 8px; padding: 16px; border: 1px solid #334155;">
+    <svg id="ragSvg" width="100%" height="400" style="min-width: 650px;"></svg>
+  </div>
+</section>
+
+<!-- PRESERVED BANKER'S ALGORITHM EXPERIMENTATION LAB -->
 <section class="panel banker-panel">
-  <div class="tip-box"><b>How to use this demo</b><p>Enter matrices as JSON arrays. Each row represents a process; each column represents a resource type. The example is prefilled with a classic safe state.</p></div>
+  <div class="panel-heading">
+    <div>
+      <h3>Banker's algorithm matrix calculator</h3>
+      <p>Test arbitrary resource-allocation states for safety using custom JSON matrix inputs.</p>
+    </div>
+    <span class="concept-tag">SAFETY CHECK</span>
+  </div>
+  <div class="tip-box">
+    <b>How to use this matrix lab:</b>
+    <p>Enter matrices as JSON arrays. Each row represents a process; each column represents a resource type. The example is prefilled with a classic safe state.</p>
+  </div>
   <div class="banker-grid">
     <label>Allocation matrix<textarea id="allocation" rows="5">[[0,1,0],[2,0,0],[3,0,2],[2,1,1],[0,0,2]]</textarea></label>
     <label>Maximum matrix<textarea id="maximum" rows="5">[[7,5,3],[3,2,2],[9,0,2],[2,2,2],[4,3,3]]</textarea></label>
     <label>Available resources<textarea id="available" rows="2">[3,3,2]</textarea></label>
   </div>
-  <button class="primary-button" id="runBanker">Run safety check</button>
-  <div id="bankerResult" class="result-message">Ready to check the system state.</div>
-  <div id="needArea" class="hidden"><h3>Need matrix (Maximum − Allocation)</h3><pre id="needMatrix"></pre></div>
+  <button class="primary-button" id="runBanker" style="margin-top: 10px;">Run safety check</button>
+  <div id="bankerResult" class="result-message" style="margin-top: 10px;">Ready to check the system state.</div>
+  <div id="needArea" class="hidden" style="margin-top: 14px;">
+    <h3>Need matrix (Maximum − Allocation)</h3>
+    <pre id="needMatrix" style="background: #1e293b; color: #f8fafc; padding: 12px; border-radius: 6px;"></pre>
+  </div>
 </section>
-<section class="panel"><h3>What this demonstrates</h3><div class="explain-grid"><div><b>Safe state</b><p>There is an order in which every process can finish using currently available resources plus resources released by completed processes.</p></div><div><b>Unsafe state</b><p>The algorithm cannot find a complete safe sequence. This does not automatically mean a deadlock has already occurred.</p></div></div></section>
+
+<section class="panel">
+  <h3>What this demonstrates</h3>
+  <div class="explain-grid">
+    <div>
+      <b>Safe state</b>
+      <p>There exists at least one order in which every process can finish using currently available resources plus resources released by completed processes.</p>
+    </div>
+    <div>
+      <b>Unsafe state</b>
+      <p>The algorithm cannot find a complete safe sequence. This does not automatically mean a deadlock has already occurred, but entering an unsafe state risks deadlock if processes claim their maximum need.</p>
+    </div>
+  </div>
+</section>
+
 <script src="{{ url_for('static', filename='banker.js') }}"></script>
+<script src="{{ url_for('static', filename='resources.js') }}"></script>
 {% endblock %}

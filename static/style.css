@@ -203,3 +203,95 @@
 @media(max-width:1150px){.state-monitor-grid{grid-template-columns:repeat(3,minmax(0,1fr))}.scheduler-status-strip{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:750px){.state-monitor-grid{grid-template-columns:1fr}.pcb-grid{grid-template-columns:1fr}.transition-buttons{grid-template-columns:1fr}.scheduler-status-strip{grid-template-columns:repeat(2,minmax(0,1fr))}.button-group{margin-left:0;width:100%}}
 
+/* --- HospitalOS v2.0 Extensions (Modules 5-11) --- */
+
+/* Scenarios Grid */
+.scenario-buttons-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-top:12px}
+@media(max-width:1100px){.scenario-buttons-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:600px){.scenario-buttons-grid{grid-template-columns:1fr}}
+.scenario-btn{background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;text-align:left;cursor:pointer;transition:all .15s ease;display:flex;flex-direction:column;gap:4px}
+.scenario-btn:hover{background:#f8fafc;border-color:#3b82f6;box-shadow:0 2px 8px rgba(59,130,246,.12);transform:translateY(-1px)}
+.scenario-btn b{font:700 12px Manrope,sans-serif;color:#0f172a}
+.scenario-btn small{font-size:11px;color:#64748b;line-height:1.35}
+
+/* Resource Cards & Concurrency Cards Grid */
+.resource-cards-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:14px}
+@media(max-width:1050px){.resource-cards-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:650px){.resource-cards-grid{grid-template-columns:1fr}}
+.resource-card,.sync-card{background:#ffffff;border:1px solid #e2e8f0;border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.resource-type-tag{font:700 9px Manrope,sans-serif;padding:3px 7px;background:#f1f5f9;color:#475569;border-radius:4px;letter-spacing:.4px;text-transform:uppercase}
+.resource-counts-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:4px}
+.res-num{font:800 18px Manrope,sans-serif;color:#0f172a}
+.res-num small{font-size:11px;font-weight:600;color:#94a3b8}
+.avail-num{color:#059669}
+.alloc-num{color:#2563eb}
+.util-num{color:#d97706}
+.resource-details-meta{display:flex;flex-direction:column;gap:6px;margin-top:8px;border-top:1px solid #f1f5f9;padding-top:8px;font-size:11px}
+.chips-row{display:flex;flex-wrap:wrap;gap:4px;margin-top:2px}
+.chip{display:inline-block;padding:2px 7px;border-radius:4px;font:700 10px Manrope,sans-serif;letter-spacing:.3px}
+.chip-holder{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.chip-waiter{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.chip-frame{background:#f5f3ff;color:#6d28d9;border:1px solid #ddd6fe;cursor:pointer}
+
+/* Badges */
+.badge{display:inline-block;padding:4px 9px;border-radius:5px;font:800 10px Manrope,sans-serif;letter-spacing:.4px;text-transform:uppercase}
+.badge-safe{background:#ecfdf5;color:#047857;border:1px solid #a7f3d0}
+.badge-unsafe{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+.badge-warning{background:#fffbeb;color:#b45309;border:1px solid #fde68a}
+.safe-sequence-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;font:700 12px Manrope,sans-serif;color:#0f172a}
+.cycle-path-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:6px;padding:8px 12px;font:700 11px Manrope,sans-serif;color:#991b1b;margin-top:6px}
+
+/* Memory Frame Grid */
+.frame-grid{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:8px;margin-top:12px}
+@media(max-width:1000px){.frame-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:600px){.frame-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.frame-tile{border:1px solid #cbd5e1;border-radius:8px;padding:10px;background:#ffffff;display:flex;flex-direction:column;gap:6px;transition:all .15s ease}
+.frame-tile.frame-allocated{background:#f0f9ff;border-color:#7dd3fc}
+.frame-tile.frame-free{background:#f8fafc;border-color:#e2e8f0}
+.frame-tile.frame-highlight{background:#dbeafe!important;border-color:#2563eb!important;box-shadow:0 0 0 2px #2563eb;transform:scale(1.03)}
+.frame-tile.frame-dim{opacity:.4}
+.frame-header{display:flex;justify-content:space-between;align-items:center}
+.frame-id{font:800 11px Manrope,sans-serif;color:#475569}
+.frame-status-dot{width:8px;height:8px;border-radius:50%}
+.dot-alloc{background:#0284c7}
+.dot-free{background:#10b981}
+.frame-body{display:flex;flex-direction:column;gap:2px}
+.frame-owner{font:800 13px Manrope,sans-serif;color:#0f172a}
+.frame-free-label{font:700 12px Manrope,sans-serif;color:#94a3b8}
+.frame-page{font-size:10px;color:#64748b}
+
+/* Terminal Console Windows */
+.terminal-window{background:#090d16;border:1px solid #1e293b;border-radius:8px;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,.25);margin-top:10px}
+.terminal-bar{background:#131b2e;padding:8px 12px;display:flex;align-items:center;gap:6px;border-bottom:1px solid #1e293b}
+.term-circle{width:10px;height:10px;border-radius:50%;display:inline-block}
+.term-circle.red{background:#ef4444}
+.term-circle.yellow{background:#f59e0b}
+.term-circle.green{background:#10b981}
+.term-title{font:600 11px monospace;color:#94a3b8;margin-left:6px}
+.terminal-body{padding:12px;font:12px/1.6 "SFMono-Regular",Consolas,"Liberation Mono",Menlo,monospace;max-height:280px;overflow-y:auto;display:flex;flex-direction:column;gap:4px}
+.term-line{color:#e2e8f0;white-space:pre-wrap;word-break:break-all}
+.term-muted{color:#64748b}
+.term-source{color:#64748b;font-size:10px;margin-left:6px;font-style:italic}
+.term-type{font-weight:700;color:#38bdf8}
+.term-fn{font-weight:700;color:#a855f7}
+.term-pid{color:#fbbf24}
+.term-args{color:#94a3b8}
+.term-ret{color:#34d399;font-weight:700}
+.term-cat{font:800 9px Manrope,sans-serif;padding:1px 5px;border-radius:3px;margin:0 4px;letter-spacing:.3px;text-transform:uppercase}
+.term-cat-process{background:#1e3a8a;color:#93c5fd}
+.term-cat-scheduler{background:#3730a3;color:#c7d2fe}
+.term-cat-resource{background:#065f46;color:#6ee7b7}
+.term-cat-memory{background:#581c87;color:#d8b4fe}
+.term-cat-sync{background:#831843;color:#fbcfe8}
+.term-cat-deadlock{background:#7f1d1d;color:#fca5a5}
+
+/* Category Filter Tabs */
+.cat-tab-btn{background:#ffffff;border:1px solid #cbd5e1;border-radius:6px;padding:6px 12px;font:700 11px Manrope,sans-serif;color:#475569;cursor:pointer;transition:all .15s ease}
+.cat-tab-btn:hover{background:#f1f5f9;color:#0f172a}
+.cat-tab-btn.active{background:#0f172a;color:#ffffff;border-color:#0f172a}
+
+/* Readmit Button in PCB modal */
+.trans-btn.btn-readmit{background:#0284c7;color:#ffffff;border:none;border-radius:6px;padding:10px 14px;font:700 12px Manrope,sans-serif;cursor:pointer;transition:all .15s ease}
+.trans-btn.btn-readmit:hover{background:#0369a1}
+
+

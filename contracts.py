@@ -53,7 +53,11 @@ class HospitalProcess:
     assigned_resources: Dict[str, int] = field(default_factory=dict)
     memory_pages: int = 2
     memory_kb: int = 8
+    memory_frames: List[int] = field(default_factory=list)
+    waiting_on_resource: Optional[str] = None
+    waiting_on_primitive: Optional[str] = None
     deadline: Optional[int] = None
+    deadline_status: str = "none"
     state_reason: str = ""
     state_history: List[Dict[str, Any]] = field(default_factory=list)
 
@@ -84,6 +88,8 @@ class HospitalResource:
     total: int
     available: int
     allocated: int = 0
+    holders: List[int] = field(default_factory=list)
+    wait_queue: List[int] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -102,10 +108,23 @@ class DeadlockState:
     process_names: List[str]
     cycle_detected: bool = False
     rag_edges: List[Dict[str, Any]] = field(default_factory=list)
+    rag_nodes: List[Dict[str, Any]] = field(default_factory=list)
+    cycle_nodes: List[str] = field(default_factory=list)
     message: str = ""
 
+    @property
+    def has_cycle(self) -> bool:
+        return self.cycle_detected
+
+    @property
+    def is_safe(self) -> bool:
+        return self.safe
+
     def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
+        d = asdict(self)
+        d["has_cycle"] = self.has_cycle
+        d["is_safe"] = self.is_safe
+        return d
 
 
 @dataclass
@@ -126,6 +145,9 @@ class MemoryState:
     total_frames: int
     free_frames: int
     frame_size_kb: int = 4
+    memory_pressure: str = "NORMAL"  # "NORMAL", "MODERATE", "HIGH"
+    used_kb: int = 0
+    total_kb: int = 0
     frames: List[MemoryFrame] = field(default_factory=list)
     process_allocations: Dict[int, Dict[str, Any]] = field(default_factory=dict)
 
@@ -134,6 +156,9 @@ class MemoryState:
             "total_frames": self.total_frames,
             "free_frames": self.free_frames,
             "frame_size_kb": self.frame_size_kb,
+            "memory_pressure": self.memory_pressure,
+            "used_kb": self.used_kb,
+            "total_kb": self.total_kb,
             "frames": [f.to_dict() for f in self.frames],
             "process_allocations": self.process_allocations,
         }
@@ -147,7 +172,9 @@ class SynchronizationPrimitive:
     primitive_type: str  # "mutex" or "semaphore"
     locked: bool = False
     count: int = 1
+    max_count: int = 1
     holder_pid: Optional[int] = None
+    holders: List[int] = field(default_factory=list)
     wait_queue: List[int] = field(default_factory=list)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -175,6 +202,8 @@ class KernelEvent:
     source: str  # "simulation" or "kernel"
     event_type: str
     summary: str
+    category: str = "SYSTEM"  # "PROCESS", "SCHEDULER", "RESOURCE", "MEMORY", "SYNC", "DEADLOCK", "DEADLINE"
+    simulation_time: Optional[int] = None
     payload: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:

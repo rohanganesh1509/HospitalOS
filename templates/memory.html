@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block heading %}Physical memory manager{% endblock %}
+{% block content %}
+<section class="welcome-row">
+  <div>
+    <h2>Educational Simulated Memory Manager</h2>
+    <p>Visualize fixed-frame physical memory allocation, per-process page tables, and dynamic memory pressure.</p>
+  </div>
+  <span class="concept-tag">MODULE 8: MEMORY MANAGEMENT &amp; PAGING</span>
+</section>
+
+<!-- MEMORY METRICS & PRESSURE OVERVIEW -->
+<section class="stats-grid">
+  <article class="stat-card">
+    <div class="stat-top">
+      <span>Total Physical Memory</span>
+      <span class="stat-icon blue">▥</span>
+    </div>
+    <div class="stat-value" id="memTotalKb">64 KB</div>
+    <div class="stat-foot">16 frames × 4 KB each</div>
+  </article>
+
+  <article class="stat-card">
+    <div class="stat-top">
+      <span>Allocated Memory</span>
+      <span class="stat-icon violet">▦</span>
+    </div>
+    <div class="stat-value" id="memUsedKb">0 KB</div>
+    <div class="stat-foot"><span id="memFreeKb">64 KB</span> available</div>
+  </article>
+
+  <article class="stat-card">
+    <div class="stat-top">
+      <span>Memory Utilization</span>
+      <span class="stat-icon amber">◷</span>
+    </div>
+    <div class="stat-value" id="memUtilPct">0%</div>
+    <div class="progress-bar-wrap" style="margin-top: 6px;">
+      <div id="memUtilFill" class="progress-bar-fill" style="width: 0%;"></div>
+    </div>
+  </article>
+
+  <article class="stat-card">
+    <div class="stat-top">
+      <span>Operating Pressure</span>
+      <span class="stat-icon green">⚡</span>
+    </div>
+    <div style="margin-top: 8px;">
+      <span id="memPressureBadge" class="badge badge-safe">PRESSURE: NORMAL</span>
+    </div>
+    <div class="stat-foot" style="margin-top: 8px;">Normal &lt;60% · Mod 60-85% · High &gt;85%</div>
+  </article>
+</section>
+
+<!-- MODULE 8: 16-FRAME PHYSICAL MEMORY GRID -->
+<section class="panel">
+  <div class="panel-heading">
+    <div>
+      <h3>Physical memory frames (16 × 4 KB)</h3>
+      <p>Simulated RAM partitioned into 16 contiguous physical frames. Hover over any allocated frame to highlight all frames belonging to that process.</p>
+    </div>
+    <div class="frame-legend">
+      <span class="legend-chip"><i class="leg-box leg-alloc"></i> Allocated Frame</span>
+      <span class="legend-chip"><i class="leg-box leg-free"></i> Free Frame (4 KB)</span>
+    </div>
+  </div>
+  <div class="frame-grid" id="frameGrid">
+    <div class="empty-state-slot">Loading physical memory frames...</div>
+  </div>
+</section>
+
+<!-- PER-PROCESS PAGING TABLE & MANUAL ALLOCATION CONTROLS -->
+<section class="content-grid">
+  <!-- Process Page Table -->
+  <article class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Process page tables</h3>
+        <p>Virtual page to physical frame mapping per HospitalProcess.</p>
+      </div>
+      <span class="count-chip">Page Tables</span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>PROCESS</th>
+            <th>PAGES</th>
+            <th>MAPPED FRAMES</th>
+            <th>FOOTPRINT</th>
+            <th>STATE</th>
+            <th>ACTIONS</th>
+          </tr>
+        </thead>
+        <tbody id="processMemoryRows">
+          <tr><td colspan="6" class="empty">Loading process memory tables...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </article>
+
+  <!-- Interactive Allocation / Deallocation Panel -->
+  <article class="panel">
+    <div class="panel-heading">
+      <div>
+        <h3>Simulate memory allocation</h3>
+        <p>Allocate or free physical pages for a process.</p>
+      </div>
+      <span class="plus-icon">＋</span>
+    </div>
+    <div class="patient-form">
+      <label>Target process
+        <select id="memPidSelect"></select>
+      </label>
+      <label>Pages to allocate (4 KB each)
+        <input type="number" id="memPagesCount" value="1" min="1" max="16">
+      </label>
+      <div class="button-group" style="margin-top: 10px;">
+        <button class="primary-button" id="btnManualAlloc" type="button">Allocate Pages</button>
+        <button class="secondary-button" id="btnManualFree" type="button">Free Process Memory</button>
+      </div>
+      <div id="memOpResult" class="result-message" style="margin-top: 14px;">Select a process to inspect or modify its allocated pages.</div>
+    </div>
+    <div class="tip-box" style="margin-top: 16px;">
+      <b>Educational Memory Model:</b>
+      <p>Processes are assigned page requirements deterministically based on treatment duration. If physical memory is exhausted, allocation fails (<code>MEMORY_ALLOCATION_FAILED</code>) and the process enters <code>WAITING</code> state until frames are freed.</p>
+    </div>
+  </article>
+</section>
+
+<!-- EDUCATIONAL EXPLAINER -->
+<section class="panel">
+  <h3>What this demonstrates</h3>
+  <div class="explain-grid">
+    <div>
+      <b>Paging Architecture</b>
+      <p>Processes address memory in virtual pages (4 KB), while physical RAM is divided into fixed frames. Non-contiguous frame allocation eliminates external fragmentation.</p>
+    </div>
+    <div>
+      <b>Deterministic Allocation &amp; Cleanup</b>
+      <p>Each patient admission allocates frames predictably. When a patient's treatment completes (<code>TERMINATED</code>), all held frames are automatically freed back to the free list.</p>
+    </div>
+    <div>
+      <b>Memory Pressure &amp; Blocking</b>
+      <p>When high memory pressure occurs and all 16 frames are occupied, new processes cannot execute until running processes terminate and yield their frames.</p>
+    </div>
+  </div>
+</section>
+
+<script src="{{ url_for('static', filename='memory.js') }}"></script>
+{% endblock %}

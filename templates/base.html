@@ -12,15 +12,36 @@
     <div class="nav-label">WORKSPACE</div>
     <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">▦ <span>Dashboard</span></a>
     <a class="nav-link {% if request.endpoint in ['doctors', 'edit_doctor'] %}active{% endif %}" href="{{ url_for('doctors') }}">♙ <span>Doctors & Assignments</span></a>
-    <a class="nav-link {% if request.endpoint == 'resources' %}active{% endif %}" href="{{ url_for('resources') }}">▤ <span>Deadlock Lab</span></a>
-    <div class="sidebar-note"><strong>Provider: {{ 'Simulation' if system_mode == 'simulation' else 'Live Kernel' }}</strong><p>{% if system_mode == 'simulation' %}Local SQLite & OS algorithms.{% else %}QEMU Kernel Bridge (Phase 0: Offline).{% endif %}</p><span class="status-dot {% if not is_connected %}offline{% endif %}"></span>{% if is_connected %}System online{% else %}Bridge disconnected{% endif %}</div>
-    <div class="sidebar-footer">OPERATING SYSTEMS PROJECT<br><b>HospitalOS v1.1</b></div>
+    <a class="nav-link {% if request.endpoint == 'resources' %}active{% endif %}" href="{{ url_for('resources') }}">▤ <span>Resources &amp; Deadlock</span></a>
+    <div class="nav-label" style="margin-top: 14px;">OS SIMULATION LABS</div>
+    <a class="nav-link {% if request.endpoint == 'memory' %}active{% endif %}" href="{{ url_for('memory') }}">▥ <span>Memory Manager</span></a>
+    <a class="nav-link {% if request.endpoint == 'synchronization' %}active{% endif %}" href="{{ url_for('synchronization') }}">🔒 <span>Synchronization Lab</span></a>
+    <a class="nav-link {% if request.endpoint == 'events' %}active{% endif %}" href="{{ url_for('events') }}">⌨ <span>Simulation Events</span></a>
+    <div class="sidebar-note">
+      <strong>Source: {{ 'Simulation Engine' if system_mode == 'simulation' else 'Live Kernel' }}</strong>
+      <p>{% if system_mode == 'simulation' %}Local SQLite &amp; unified OS simulation model.{% else %}QEMU Kernel Bridge (Offline).{% endif %}</p>
+      <span class="status-dot {% if not is_connected %}offline{% endif %}"></span>
+      {% if is_connected %}Simulation online{% else %}Kernel bridge offline{% endif %}
+    </div>
+    <div class="sidebar-footer">OPERATING SYSTEMS PROJECT<br><b>HospitalOS v2.0</b></div>
   </aside>
   <main class="main">
-    <header class="topbar"><div><span class="eyebrow">HOSPITAL OPERATIONS</span><h1>{% block heading %}Dashboard{% endblock %}</h1></div><div class="top-right"><span class="live-pill {% if not is_connected %}disconnected{% endif %}"><i class="{% if not is_connected %}dot-offline{% endif %}"></i>{% if system_mode == 'simulation' %}Simulation ready{% else %}Kernel bridge offline{% endif %}</span><div class="avatar" title="Mode: {{ system_mode }}">OS</div></div></header>
+    <header class="topbar">
+      <div>
+        <span class="eyebrow">HOSPITAL OPERATIONS</span>
+        <h1>{% block heading %}Dashboard{% endblock %}</h1>
+      </div>
+      <div class="top-right">
+        <span class="live-pill {% if not is_connected %}disconnected{% endif %}" id="globalModePill">
+          <i class="{% if not is_connected %}dot-offline{% endif %}"></i>
+          {% if system_mode == 'simulation' %}DATA SOURCE: SIMULATION ENGINE{% else %}LIVE KERNEL — DISCONNECTED{% endif %}
+        </span>
+        <div class="avatar" title="Mode: {{ system_mode }}">OS</div>
+      </div>
+    </header>
     {% with messages = get_flashed_messages(with_categories=true) %}{% if messages %}{% for category, message in messages %}<div class="flash {{ category }}">{{ message }}</div>{% endfor %}{% endif %}{% endwith %}
     {% block content %}{% endblock %}
-    <footer class="page-footer">HospitalOS · Operating Systems concepts in a hospital resource simulation</footer>
+    <footer class="page-footer">HospitalOS · Educational Operating System &amp; Hospital Resource Simulation</footer>
   </main>
 </body>
 </html>

@@ -114,6 +114,53 @@
     <div class="tip-box"><b>Automatic doctor assignment</b><p>HospitalOS chooses an on-duty doctor in the selected specialization with the lowest active workload and available capacity. If none is available, the patient remains unassigned.</p></div>
   </article>
 </section>
+
+<!-- INTERACTIVE OS DEMONSTRATION SCENARIOS (MODULE CROSS-CUTTING) -->
+<section class="panel scenarios-panel">
+  <div class="panel-heading">
+    <div>
+      <h3>Interactive OS Demonstration Scenarios</h3>
+      <p>Deterministic one-click scenarios demonstrating core operating systems principles using unified live HospitalOS state.</p>
+    </div>
+    <span class="concept-tag">SCENARIOS A–H</span>
+  </div>
+  <div class="scenario-buttons-grid">
+    <button class="scenario-btn" type="button" onclick="triggerDemoScenario('A')">
+      <b>Scenario A: Normal FCFS</b>
+      <small>Admits batch, aligns ready queue, and runs deterministic FCFS.</small>
+    </button>
+    <button class="scenario-btn" type="button" onclick="triggerDemoScenario('B')">
+      <b>Scenario B: Round Robin</b>
+      <small>Executes RR (Q=2); long burst triggers QUANTUM_EXPIRE to ready tail.</small>
+    </button>
+    <button class="scenario-btn" type="button" onclick="triggerDemoScenario('C')">
+      <b>Scenario C: SRTF Preemption</b>
+      <small>Short-burst patient arrives and preempts longer running process.</small>
+    </button>
+    <button class="scenario-btn" type="button" onclick="triggerDemoScenario('D')">
+      <b>Scenario D: Emergency Preemption</b>
+      <small>Code Red (Priority 1) emergency arrives, triggering EMERGENCY_PREEMPT.</small>
+    </button>
+    <button class="scenario-btn" type="button" onclick="triggerDemoScenario('E')">
+      <b>Scenario E: Resource Blocking</b>
+      <small>Ventilators exhausted; requesting process transitions to WAITING state.</small>
+    </button>
+    <button class="scenario-btn" type="button" onclick="triggerDemoScenario('F')">
+      <b>Scenario F: Banker's Avoidance</b>
+      <small>Unsafe request is rejected by Banker's algorithm (RESOURCE_DENIED_UNSAFE).</small>
+    </button>
+    <button class="scenario-btn" type="button" onclick="triggerDemoScenario('G')">
+      <b>Scenario G: Memory Pressure</b>
+      <small>16 physical frames saturated; new process blocks on MEMORY_ALLOCATION_FAILED.</small>
+    </button>
+    <button class="scenario-btn" type="button" onclick="triggerDemoScenario('H')">
+      <b>Scenario H: Mutex / Sem Contention</b>
+      <small>Operating Theatre lock contention; blocked process wakes up upon release.</small>
+    </button>
+  </div>
+  <div id="scenarioResultBox" class="result-message" style="margin-top: 12px;">Click any scenario above to execute the live demonstration sequence.</div>
+</section>
+
 <section class="panel scheduler-panel">
   <div class="panel-heading">
     <div>
@@ -286,6 +333,7 @@
         <button class="trans-btn btn-running" id="btnTransRunning" type="button" onclick="transitionCurrentProcess('RUNNING')">Dispatch to RUNNING</button>
         <button class="trans-btn btn-waiting" id="btnTransWaiting" type="button" onclick="transitionCurrentProcess('WAITING')">Block on Resource (WAITING)</button>
         <button class="trans-btn btn-term" id="btnTransTerm" type="button" onclick="transitionCurrentProcess('TERMINATED')">Complete (TERMINATED)</button>
+        <button class="trans-btn btn-readmit hidden" id="btnTransReadmit" type="button" onclick="readmitCurrentProcess()">↻ Re-admit Patient (New Intake)</button>
       </div>
     </div>
   </div>

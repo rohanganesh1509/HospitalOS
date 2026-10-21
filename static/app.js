@@ -366,3 +366,33 @@ resetButton?.addEventListener("click", async () => {
     resetButton.textContent = "↺ Reset";
   }
 });
+
+// 4. Interactive OS Demonstration Scenarios (Scenarios A through H)
+async function triggerDemoScenario(scenarioId) {
+  const scenarioBox = document.getElementById("scenarioResultBox");
+  if (scenarioBox) {
+    scenarioBox.className = "result-message";
+    scenarioBox.textContent = `Executing Scenario ${scenarioId}...`;
+  }
+  try {
+    const res = await fetch(`/api/system/scenarios/${scenarioId}`, { method: "POST" });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || data.message || "Scenario execution failed");
+    if (scenarioBox) {
+      scenarioBox.className = "result-message success";
+      scenarioBox.textContent = `✓ Scenario ${scenarioId} Complete: ${data.message || 'Action executed successfully.'}`;
+    }
+    // Refresh process monitor and scheduler
+    if (typeof fetchProcesses === "function") {
+      await fetchProcesses();
+    }
+    const runBtn = document.getElementById("runSchedule");
+    if (runBtn) runBtn.click();
+  } catch (err) {
+    if (scenarioBox) {
+      scenarioBox.className = "result-message error";
+      scenarioBox.textContent = `✕ Scenario ${scenarioId} error: ${err.message}`;
+    }
+  }
+}
+window.triggerDemoScenario = triggerDemoScenario;

@@ -202,16 +202,26 @@ function renderPcbModal(p) {
     }
   }
 
-  // Update action buttons state
+  // Update action buttons state — strictly enforce TERMINATED terminal semantics
   const btnReady = document.getElementById("btnTransReady");
   const btnRunning = document.getElementById("btnTransRunning");
   const btnWaiting = document.getElementById("btnTransWaiting");
   const btnTerm = document.getElementById("btnTransTerm");
+  const btnReadmit = document.getElementById("btnTransReadmit");
 
-  if (btnReady) btnReady.disabled = (p.state === "READY");
-  if (btnRunning) btnRunning.disabled = (p.state === "RUNNING");
-  if (btnWaiting) btnWaiting.disabled = (p.state === "WAITING");
-  if (btnTerm) btnTerm.disabled = (p.state === "TERMINATED");
+  const isTerm = (p.state === "TERMINATED");
+  if (btnReady) btnReady.disabled = isTerm || (p.state === "READY");
+  if (btnRunning) btnRunning.disabled = isTerm || (p.state === "RUNNING");
+  if (btnWaiting) btnWaiting.disabled = isTerm || (p.state === "WAITING");
+  if (btnTerm) btnTerm.disabled = isTerm;
+
+  if (btnReadmit) {
+    if (isTerm) {
+      btnReadmit.classList.remove("hidden");
+    } else {
+      btnReadmit.classList.add("hidden");
+    }
+  }
 }
 
 async function transitionCurrentProcess(targetState) {
@@ -237,6 +247,22 @@ async function transitionCurrentProcess(targetState) {
     alert("Transition error: " + err.message);
   }
 }
+
+async function readmitCurrentProcess() {
+  if (!activeProcessId) return;
+  try {
+    const res = await fetch(`/api/system/processes/${activeProcessId}/readmit`, {
+      method: "POST"
+    });
+    const result = await res.json();
+    if (!res.ok) throw new Error(result.error || result.message || "Readmit failed");
+    await fetchProcesses();
+    openPcbInspector(activeProcessId);
+  } catch (err) {
+    alert("Readmission error: " + err.message);
+  }
+}
+window.readmitCurrentProcess = readmitCurrentProcess;
 
 async function stepLifecycle() {
   const stepBtn = document.getElementById("stepLifecycleBtn");

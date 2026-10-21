@@ -305,6 +305,21 @@ def resources():
     return render_template("resources.html")
 
 
+@app.route("/memory")
+def memory():
+    return render_template("memory.html")
+
+
+@app.route("/synchronization")
+def synchronization():
+    return render_template("synchronization.html")
+
+
+@app.route("/events")
+def events():
+    return render_template("events.html")
+
+
 @app.context_processor
 def inject_system_mode():
     provider = get_provider()
@@ -356,10 +371,85 @@ def system_resources():
     })
 
 
+@app.route("/api/system/resources/request", methods=["POST"])
+def system_request_resource():
+    data = request.get_json(silent=True) or {}
+    try:
+        pid = int(data.get("pid"))
+        resource_id = str(data.get("resource_id"))
+        units = int(data.get("units", 1))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid pid, resource_id, or units."}), 400
+    provider = get_provider()
+    result = provider.request_resource(pid, resource_id, units)
+    if not result.get("success"):
+        return jsonify(result), 400
+    return jsonify(result)
+
+
+@app.route("/api/system/resources/release", methods=["POST"])
+def system_release_resource():
+    data = request.get_json(silent=True) or {}
+    try:
+        pid = int(data.get("pid"))
+        resource_id = str(data.get("resource_id"))
+        units = int(data.get("units", 1))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid pid, resource_id, or units."}), 400
+    provider = get_provider()
+    result = provider.release_resource(pid, resource_id, units)
+    if not result.get("success"):
+        return jsonify(result), 400
+    return jsonify(result)
+
+
+@app.route("/api/system/rag", methods=["GET"])
+def system_rag():
+    provider = get_provider()
+    deadlock = provider.get_deadlock_state()
+    return jsonify({
+        "rag_nodes": deadlock.rag_nodes,
+        "rag_edges": deadlock.rag_edges,
+        "has_cycle": deadlock.has_cycle,
+        "cycle_nodes": deadlock.cycle_nodes,
+        "is_safe": deadlock.is_safe,
+        "safe_sequence": deadlock.safe_sequence,
+    })
+
+
 @app.route("/api/system/memory", methods=["GET"])
 def system_memory():
     provider = get_provider()
     return jsonify(provider.get_memory_state().to_dict())
+
+
+@app.route("/api/system/memory/allocate", methods=["POST"])
+def system_memory_allocate():
+    data = request.get_json(silent=True) or {}
+    try:
+        pid = int(data.get("pid"))
+        pages = int(data.get("pages", 1)) if data.get("pages") is not None else None
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid pid or pages."}), 400
+    provider = get_provider()
+    result = provider.allocate_memory(pid, pages)
+    if not result.get("success"):
+        return jsonify(result), 400
+    return jsonify(result)
+
+
+@app.route("/api/system/memory/free", methods=["POST"])
+def system_memory_free():
+    data = request.get_json(silent=True) or {}
+    try:
+        pid = int(data.get("pid"))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid pid."}), 400
+    provider = get_provider()
+    result = provider.free_memory(pid)
+    if not result.get("success"):
+        return jsonify(result), 400
+    return jsonify(result)
 
 
 @app.route("/api/system/synchronization", methods=["GET"])
@@ -368,11 +458,62 @@ def system_synchronization():
     return jsonify(provider.get_synchronization_state().to_dict())
 
 
+@app.route("/api/system/sync/acquire", methods=["POST"])
+def system_sync_acquire():
+    data = request.get_json(silent=True) or {}
+    try:
+        pid = int(data.get("pid"))
+        primitive_id = str(data.get("primitive_id"))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid pid or primitive_id."}), 400
+    provider = get_provider()
+    result = provider.acquire_lock(pid, primitive_id)
+    if not result.get("success"):
+        return jsonify(result), 400
+    return jsonify(result)
+
+
+@app.route("/api/system/sync/release", methods=["POST"])
+def system_sync_release():
+    data = request.get_json(silent=True) or {}
+    try:
+        pid = int(data.get("pid"))
+        primitive_id = str(data.get("primitive_id"))
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid pid or primitive_id."}), 400
+    provider = get_provider()
+    result = provider.release_lock(pid, primitive_id)
+    if not result.get("success"):
+        return jsonify(result), 400
+    return jsonify(result)
+
+
 @app.route("/api/system/events", methods=["GET"])
 def system_events():
     limit = request.args.get("limit", 50, type=int)
+    category = request.args.get("category")
     provider = get_provider()
-    return jsonify([e.to_dict() for e in provider.get_events(limit=limit)])
+    return jsonify([e.to_dict() for e in provider.get_events(limit=limit, category=category)])
+
+
+@app.route("/api/system/syscalls", methods=["GET"])
+def system_syscalls():
+    limit = request.args.get("limit", 50, type=int)
+    provider = get_provider()
+    if hasattr(provider, "get_simulated_syscalls"):
+        return jsonify(provider.get_simulated_syscalls(limit=limit))
+    return jsonify([])
+
+
+@app.route("/api/system/scenarios/<scenario_id>", methods=["POST"])
+def system_scenario(scenario_id):
+    provider = get_provider()
+    if hasattr(provider, "run_demo_scenario"):
+        result = provider.run_demo_scenario(scenario_id.upper())
+        if not result.get("success"):
+            return jsonify(result), 400
+        return jsonify(result)
+    return jsonify({"success": False, "message": "Demo scenarios not supported in current mode."}), 400
 
 
 @app.route("/api/system/processes/<int:pid>", methods=["GET"])
@@ -403,6 +544,17 @@ def system_lifecycle_step():
     provider = get_provider()
     result = provider.step_lifecycle()
     return jsonify(result)
+
+
+@app.route("/api/system/processes/<int:pid>/readmit", methods=["POST"])
+def system_process_readmit(pid):
+    provider = get_provider()
+    if hasattr(provider, "readmit_patient"):
+        result = provider.readmit_patient(pid)
+        if not result.get("success"):
+            return jsonify(result), 400
+        return jsonify(result)
+    return jsonify({"success": False, "message": "Readmit not supported in current mode."}), 400
 
 
 init_db()
